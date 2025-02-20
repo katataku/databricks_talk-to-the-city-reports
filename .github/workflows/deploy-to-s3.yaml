@@ -1,9 +1,10 @@
-name: Deploy to S3
+name: Deploy to GitHub Pages
 
 on:
   push:
-    branches:
-      - deploy-test
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   deploy:
@@ -51,24 +52,11 @@ jobs:
           echo "Building report: $REPORT"
           npm run build
       
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-      
-      - name: Deploy to S3
-        env:
-          REPORT: ${{ steps.extract_name.outputs.report_name }}
-        run: |
-          echo "Starting deployment for report: $REPORT"
-          aws s3 rm s3://${{ secrets.S3_BUCKET }}/report --recursive
-          aws s3 rm s3://${{ secrets.S3_BUCKET }}/index.html
-          aws s3 cp scatter/pipeline/outputs/$REPORT/report s3://${{ secrets.S3_BUCKET }}/report --recursive
-          echo '<meta http-equiv="refresh" content="0; url=/report/index.html">' > index.html
-          aws s3 cp index.html s3://${{ secrets.S3_BUCKET }}/
-          echo "Deployment completed successfully"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: scatter/pipeline/outputs/$REPORT/report
 
       - name: Create deployment tag
         if: success()
